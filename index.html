@@ -82,7 +82,7 @@
             text-align: center;
             font-size: 18px;
         }
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
             form {
                 flex-direction: column;
             }
@@ -95,6 +95,19 @@
             }
             .summary div {
                 margin-bottom: 10px;
+            }
+        }
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 24px;
+            }
+            input, button, select {
+                font-size: 14px;
+                padding: 8px;
+            }
+            th, td {
+                font-size: 14px;
+                padding: 8px;
             }
         }
     </style>
@@ -131,7 +144,6 @@
                 <!-- Transactions will be dynamically added here -->
             </tbody>
         </table>
-        
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -180,6 +192,7 @@
                     localStorage.setItem('totalExpenseToday', totalExpenseToday.toString());
                     localStorage.setItem('lastReset', now.toString());
                     updateTotals();
+               
                 }
             }
 
