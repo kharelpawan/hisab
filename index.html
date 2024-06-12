@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        form {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input, button, select {
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            flex: 1 1 calc(50% - 20px);
+            box-sizing: border-box;
+        }
+        select {
+            flex: 1 1 100%;
+        }
+        button {
+            background-color: #5cb85c;
+            color: white;
+            cursor: pointer;
+            flex: 1 1 100%;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            font-size: 16px;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        .summary {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            gap: 10px;
+        }
+        .summary div {
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background: #f9f9f9;
+            flex: 1;
+            text-align: center;
+            font-size: 18px;
+        }
+        @media (max-width: 600px) {
+            form {
+                flex-direction: column;
+            }
+            input, button, select {
+                width: 100%;
+                flex: 1 1 100%;
+            }
+            .summary {
+                flex-direction: column;
+            }
+            .summary div {
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Expense Tracker</h1>
+        <div class="summary">
+            <div>Total Money Available: <span id="total-money">0</span></div>
+            <div>Total Expense Today: <span id="total-expense-today">0</span></div>
+        </div>
+        <form id="transaction-form">
+            <select id="type" required>
+                <option value="" disabled selected>Type</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+            </select>
+            <input type="text" id="description" placeholder="Description" required>
+            <input type="number" id="amount" placeholder="Amount" required>
+            <input type="datetime-local" id="date-time" required>
+            <button type="submit">Add Transaction</button>
+        </form>
+        <table id="transactions-table">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Date & Time</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Transactions will be dynamically added here -->
+            </tbody>
+        </table>
+        
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('transaction-form');
+            const transactionsTable = document.getElementById('transactions-table').getElementsByTagName('tbody')[0];
+            const totalMoneySpan = document.getElementById('total-money');
+            const totalExpenseTodaySpan = document.getElementById('total-expense-today');
+
+            let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+            let totalMoney = parseFloat(localStorage.getItem('totalMoney')) || 0;
+            let totalExpenseToday = parseFloat(localStorage.getItem('totalExpenseToday')) || 0;
+
+            function renderTransactions() {
+                transactionsTable.innerHTML = '';
+                transactions.slice().reverse().forEach((transaction, index) => {
+                    const row = transactionsTable.insertRow();
+                    row.innerHTML = `
+                        <td>${transaction.type}</td>
+                        <td>${transaction.description}</td>
+                        <td>${transaction.amount}</td>
+                        <td>${new Date(transaction.dateTime).toLocaleString()}</td>
+                        <td>
+                            <button onclick="editTransaction(${index})">Edit</button>
+                            <button onclick="deleteTransaction(${index})">Delete</button>
+                        </td>
+                    `;
+                });
+            }
+
+            function saveTransactions() {
+                localStorage.setItem('transactions', JSON.stringify(transactions));
+                localStorage.setItem('totalMoney', totalMoney.toString());
+                localStorage.setItem('totalExpenseToday', totalExpenseToday.toString());
+            }
+
+            function updateTotals() {
+                totalMoneySpan.textContent = totalMoney.toFixed(2);
+                totalExpenseTodaySpan.textContent = totalExpenseToday.toFixed(2);
+            }
+
+            function resetDailyExpense() {
+                const now = new Date();
+                const lastReset = new Date(localStorage.getItem('lastReset') || now);
+                if (now - lastReset > 24 * 60 * 60 * 1000) {
+                    totalExpenseToday = 0;
+                    localStorage.setItem('totalExpenseToday', totalExpenseToday.toString());
+                    localStorage.setItem('lastReset', now.toString());
+                    updateTotals();
+                }
+            }
+
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const type = document.getElementById('type').value;
+                const description = document.getElementById('description').value;
+                const amount = parseFloat(document.getElementById('amount').value);
+                const dateTime = document.getElementById('date-time').value;
+
+                transactions.push({ type, description, amount, dateTime });
+
+                if (type === 'income') {
+                    totalMoney += amount;
+                } else if (type === 'expense') {
+                    totalMoney -= amount;
+                    const today = new Date();
+                    if (new Date(dateTime).toDateString() === today.toDateString()) {
+                        totalExpenseToday += amount;
+                    }
+                }
+
+                saveTransactions();
+                renderTransactions();
+                updateTotals();
+                form.reset();
+            });
+
+            window.editTransaction = function(index) {
+                const transaction = transactions[index];
+                document.getElementById('type').value = transaction.type;
+                document.getElementById('description').value = transaction.description;
+                document.getElementById('amount').value = transaction.amount;
+                document.getElementById('date-time').value = transaction.dateTime;
+
+                if (transaction.type === 'income') {
+                    totalMoney -= transaction.amount;
+                } else if (transaction.type === 'expense') {
+                    totalMoney += transaction.amount;
+                    const today = new Date();
+                    if (new Date(transaction.dateTime).toDateString() === today.toDateString()) {
+                        totalExpenseToday -= transaction.amount;
+                    }
+                }
+
+                transactions.splice(index, 1);
+                saveTransactions();
+                renderTransactions();
+                updateTotals();
+            };
+
+            window.deleteTransaction = function(index) {
+                const transaction = transactions[index];
+                if (transaction.type === 'income') {
+                    totalMoney -= transaction.amount;
+                } else if (transaction.type === 'expense') {
+                    totalMoney += transaction.amount;
+                    const today = new Date();
+                    if (new Date(transaction.dateTime).toDateString() === today.toDateString()) {
+                        totalExpenseToday -= transaction.amount;
+                    }
+                }
+
+                transactions.splice(index, 1);
+                saveTransactions();
+                renderTransactions();
+                updateTotals();
+            };
+
+            window.addEventListener('load', function() {
+                resetDailyExpense();
+                renderTransactions();
+                updateTotals();
+            });
+        });
+    </script>
+</body>
+</html>
