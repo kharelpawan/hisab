@@ -57,6 +57,7 @@
             width: 100%;
             margin-top: 20px;
             border-collapse: collapse;
+            display: table;
         }
         th, td {
             padding: 10px;
@@ -81,6 +82,17 @@
             flex: 1;
             text-align: center;
             font-size: 18px;
+        }
+        .transaction-card {
+            display: none;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #fff;
+            margin-bottom: 10px;
+        }
+        .transaction-card div {
+            margin-bottom: 5px;
         }
         @media (max-width: 768px) {
             form {
@@ -108,6 +120,12 @@
             th, td {
                 font-size: 14px;
                 padding: 8px;
+            }
+            table, thead {
+                display: none;
+            }
+            .transaction-card {
+                display: block;
             }
         }
     </style>
@@ -144,11 +162,15 @@
                 <!-- Transactions will be dynamically added here -->
             </tbody>
         </table>
+        <div id="transactions-list">
+            <!-- Transaction cards will be dynamically added here -->
+        </div>
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('transaction-form');
             const transactionsTable = document.getElementById('transactions-table').getElementsByTagName('tbody')[0];
+            const transactionsList = document.getElementById('transactions-list');
             const totalMoneySpan = document.getElementById('total-money');
             const totalExpenseTodaySpan = document.getElementById('total-expense-today');
 
@@ -158,7 +180,9 @@
 
             function renderTransactions() {
                 transactionsTable.innerHTML = '';
+                transactionsList.innerHTML = '';
                 transactions.slice().reverse().forEach((transaction, index) => {
+                    // Add to table
                     const row = transactionsTable.insertRow();
                     row.innerHTML = `
                         <td>${transaction.type}</td>
@@ -170,6 +194,20 @@
                             <button onclick="deleteTransaction(${index})">Delete</button>
                         </td>
                     `;
+                    // Add to card view
+                    const card = document.createElement('div');
+                    card.classList.add('transaction-card');
+                    card.innerHTML = `
+                        <div><strong>Type:</strong> ${transaction.type}</div>
+                        <div><strong>Description:</strong> ${transaction.description}</div>
+                        <div><strong>Amount:</strong> ${transaction.amount}</div>
+                        <div><strong>Date & Time:</strong> ${new Date(transaction.dateTime).toLocaleString()}</div>
+                        <div>
+                            <button onclick="editTransaction(${index})">Edit</button>
+                            <button onclick="deleteTransaction(${index})">Delete</button>
+                        </div>
+                    `;
+                    transactionsList.appendChild(card);
                 });
             }
 
@@ -178,12 +216,10 @@
                 localStorage.setItem('totalMoney', totalMoney.toString());
                 localStorage.setItem('totalExpenseToday', totalExpenseToday.toString());
             }
-
             function updateTotals() {
                 totalMoneySpan.textContent = totalMoney.toFixed(2);
                 totalExpenseTodaySpan.textContent = totalExpenseToday.toFixed(2);
             }
-
             function resetDailyExpense() {
                 const now = new Date();
                 const lastReset = new Date(localStorage.getItem('lastReset') || now);
@@ -192,16 +228,7 @@
                     localStorage.setItem('totalExpenseToday', totalExpenseToday.toString());
                     localStorage.setItem('lastReset', now.toString());
                     updateTotals();
-                }
-            }
 
-            function checkMidnightReset() {
-                const now = new Date();
-                if (now.getHours() === 0 && now.getMinutes() === 0) {
-                    totalExpenseToday = 0;
-                    localStorage.setItem('totalExpenseToday', totalExpenseToday.toString());
-                    localStorage.setItem('lastReset', now.toString());
-                    updateTotals();
                 }
             }
 
@@ -211,9 +238,7 @@
                 const description = document.getElementById('description').value;
                 const amount = parseFloat(document.getElementById('amount').value);
                 const dateTime = document.getElementById('date-time').value;
-
                 transactions.push({ type, description, amount, dateTime });
-
                 if (type === 'income') {
                     totalMoney += amount;
                 } else if (type === 'expense') {
@@ -223,20 +248,17 @@
                         totalExpenseToday += amount;
                     }
                 }
-
                 saveTransactions();
                 renderTransactions();
                 updateTotals();
                 form.reset();
             });
-
             window.editTransaction = function(index) {
                 const transaction = transactions[index];
                 document.getElementById('type').value = transaction.type;
                 document.getElementById('description').value = transaction.description;
                 document.getElementById('amount').value = transaction.amount;
                 document.getElementById('date-time').value = transaction.dateTime;
-
                 if (transaction.type === 'income') {
                     totalMoney -= transaction.amount;
                 } else if (transaction.type === 'expense') {
@@ -246,13 +268,11 @@
                         totalExpenseToday -= transaction.amount;
                     }
                 }
-
                 transactions.splice(index, 1);
                 saveTransactions();
                 renderTransactions();
                 updateTotals();
             };
-
             window.deleteTransaction = function(index) {
                 const transaction = transactions[index];
                 if (transaction.type === 'income') {
@@ -264,18 +284,15 @@
                         totalExpenseToday -= transaction.amount;
                     }
                 }
-
                 transactions.splice(index, 1);
                 saveTransactions();
                 renderTransactions();
                 updateTotals();
             };
-
             window.addEventListener('load', function() {
                 resetDailyExpense();
                 renderTransactions();
                 updateTotals();
-                setInterval(checkMidnightReset, 60000); // Check every minute
             });
         });
     </script>
