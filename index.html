@@ -57,7 +57,6 @@
             width: 100%;
             margin-top: 20px;
             border-collapse: collapse;
-            display: table;
         }
         th, td {
             padding: 10px;
@@ -82,17 +81,6 @@
             flex: 1;
             text-align: center;
             font-size: 18px;
-        }
-        .transaction-card {
-            display: none;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background: #fff;
-            margin-bottom: 10px;
-        }
-        .transaction-card div {
-            margin-bottom: 5px;
         }
         @media (max-width: 768px) {
             form {
@@ -120,12 +108,6 @@
             th, td {
                 font-size: 14px;
                 padding: 8px;
-            }
-            table, thead {
-                display: none;
-            }
-            .transaction-card {
-                display: block;
             }
         }
     </style>
@@ -162,15 +144,11 @@
                 <!-- Transactions will be dynamically added here -->
             </tbody>
         </table>
-        <div id="transactions-list">
-            <!-- Transaction cards will be dynamically added here -->
-        </div>
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('transaction-form');
             const transactionsTable = document.getElementById('transactions-table').getElementsByTagName('tbody')[0];
-            const transactionsList = document.getElementById('transactions-list');
             const totalMoneySpan = document.getElementById('total-money');
             const totalExpenseTodaySpan = document.getElementById('total-expense-today');
 
@@ -180,9 +158,7 @@
 
             function renderTransactions() {
                 transactionsTable.innerHTML = '';
-                transactionsList.innerHTML = '';
                 transactions.slice().reverse().forEach((transaction, index) => {
-                    // Add to table
                     const row = transactionsTable.insertRow();
                     row.innerHTML = `
                         <td>${transaction.type}</td>
@@ -194,20 +170,6 @@
                             <button onclick="deleteTransaction(${index})">Delete</button>
                         </td>
                     `;
-                    // Add to card view
-                    const card = document.createElement('div');
-                    card.classList.add('transaction-card');
-                    card.innerHTML = `
-                        <div><strong>Type:</strong> ${transaction.type}</div>
-                        <div><strong>Description:</strong> ${transaction.description}</div>
-                        <div><strong>Amount:</strong> ${transaction.amount}</div>
-                        <div><strong>Date & Time:</strong> ${new Date(transaction.dateTime).toLocaleString()}</div>
-                        <div>
-                            <button onclick="editTransaction(${index})">Edit</button>
-                            <button onclick="deleteTransaction(${index})">Delete</button>
-                        </div>
-                    `;
-                    transactionsList.appendChild(card);
                 });
             }
 
@@ -226,6 +188,16 @@
                 const now = new Date();
                 const lastReset = new Date(localStorage.getItem('lastReset') || now);
                 if (now - lastReset > 24 * 60 * 60 * 1000) {
+                    totalExpenseToday = 0;
+                    localStorage.setItem('totalExpenseToday', totalExpenseToday.toString());
+                    localStorage.setItem('lastReset', now.toString());
+                    updateTotals();
+                }
+            }
+
+            function checkMidnightReset() {
+                const now = new Date();
+                if (now.getHours() === 0 && now.getMinutes() === 0) {
                     totalExpenseToday = 0;
                     localStorage.setItem('totalExpenseToday', totalExpenseToday.toString());
                     localStorage.setItem('lastReset', now.toString());
@@ -303,6 +275,7 @@
                 resetDailyExpense();
                 renderTransactions();
                 updateTotals();
+                setInterval(checkMidnightReset, 60000); // Check every minute
             });
         });
     </script>
