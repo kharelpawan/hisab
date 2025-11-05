@@ -220,17 +220,40 @@
                 totalMoneySpan.textContent = totalMoney.toFixed(2);
                 totalExpenseTodaySpan.textContent = totalExpenseToday.toFixed(2);
             }
-            function resetDailyExpense() {
-                const now = new Date();
-                const lastReset = new Date(localStorage.getItem('lastReset') || now);
-                if (now - lastReset > 24 * 60 * 60 * 1000) {
-                    totalExpenseToday = 0;
-                    localStorage.setItem('totalExpenseToday', totalExpenseToday.toString());
-                    localStorage.setItem('lastReset', now.toString());
-                    updateTotals();
+            // function resetDailyExpense() {
+            //     const now = new Date();
+            //     const lastReset = new Date(localStorage.getItem('lastReset') || now);
+            //     if (now - lastReset > 24 * 60 * 60 * 1000) {
+            //         totalExpenseToday = 0;
+            //         localStorage.setItem('totalExpenseToday', totalExpenseToday.toString());
+            //         localStorage.setItem('lastReset', now.toString());
+            //         updateTotals();
 
-                }
-            }
+            //     }
+            // }
+function resetDailyExpense() {
+    const now = new Date();
+    const lastReset = localStorage.getItem('lastReset');
+
+    if (lastReset) {
+        const lastDate = new Date(lastReset);
+        // Compare only the date parts (not time)
+        const isDifferentDay =
+            now.getFullYear() !== lastDate.getFullYear() ||
+            now.getMonth() !== lastDate.getMonth() ||
+            now.getDate() !== lastDate.getDate();
+
+        if (isDifferentDay) {
+            totalExpenseToday = 0;
+            localStorage.setItem('totalExpenseToday', totalExpenseToday.toString());
+            localStorage.setItem('lastReset', now.toString());
+            updateTotals();
+        }
+    } else {
+        // First time running — initialize
+        localStorage.setItem('lastReset', now.toString());
+    }
+}
 
             form.addEventListener('submit', function(event) {
                 event.preventDefault();
